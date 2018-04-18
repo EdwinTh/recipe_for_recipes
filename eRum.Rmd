@@ -1,0 +1,184 @@
+---
+author: Edwin Thoen
+title: "A recipe for recipes"
+output: ioslides_presentation
+---
+
+## The `recipes` package
+
+"Preprocessing Tools to Create Design Matrices"
+
+Define the steps you'll take to go from raw data to the analysis set.
+
+Store these steps into a procedure (a recipe), and apply it on new data.
+
+You focus on the best steps to take, `recipes` does the bookkeeping.
+
+On CRAN since
+
+## The `recipes` package
+
+A `recipe` is the specification of an intent, separate the planning from the doing.
+
+<picture of a recipe>
+
+## Creating a `recipe`
+
+```{r, warning = FALSE}
+train_set <- mtcars[1:20, c("am", "disp", "hp")]
+test_set  <- mtcars[21:32, c("am", "disp", "hp")]
+library(recipes)
+library(dplyr)
+rec <- recipe(train_set, am ~ .)
+```
+
+We have defined the roles here, `am` is the outcome, `disp` and `hp` are the predictors.
+
+## Adding `steps` to the `recipe`
+
+Once a recipe has created we can add steps to it.
+
+```{r}
+rec_with_steps <- rec %>% 
+  step_center(all_predictors()) %>% 
+  step_scale(all_predictors())
+```
+
+This is specifying the intent, we didn't do anything on the data yet.
+
+## Preparing the recipe with `prep`
+
+Here the work starts. By applying `prep` to the recipe, we are acquiring all the necesarry information on the training set. 
+
+```{r}
+rec_prepped <- rec_with_steps %>% 
+  prep(train = train_set)
+rec_prepped
+```
+
+We now have the statistics to apply the centering and scaling derived from the training set and stored in the recipe.
+
+## Preparing the data with `bake`
+
+```{r}
+train_final <- bake(rec_prepped, train_set)
+test_final  <- bake(rec_prepped, test_set)
+```
+
+The statistics to center and scale are learned on the `train_set` and applied to the `test_set`.
+
+## Why am I talking about `recipes`?
+
+Added the `check` framework together with Max.
+
+A `check` does not change the data in any way, it tests assumptions and will break `bake` if these are not met.
+
+```{r}
+rec <- recipe(train_set) %>% check_missing(everything()) %>% prep()
+test_set[1, 1] <- NA
+train_baked <- bake(rec, train_set)
+test_baked  <- bake(rec, test_set)
+```
+
+## Building youw own steps and checks
+
+Fully leverage package structure.
+
+For your own preparations and to contribute to the package.
+
+Challenge, delve a little deeper into the package inner workings.
+
+## Aside: S3 objects
+
+```{r}
+eRum_generator <- function(name, country){
+  x <- list(name = name, country = country)
+  class(x) <- "eRum"
+  x
+}
+eRum_generator("Edwin", "the Netherlands")
+
+print.eRum <- function(x) {
+  paste0(x$name, " from ", x$country, " is at eRum and thinks its awesome.") %>% 
+    print()
+}
+eRum_generator("Edwin", "the Netherlands")
+eRum_generator("Riccardo", "Italy")
+```
+
+## Aside: S3 objects
+
+An S3 object is built by adding a `class` to a base object.
+
+Functions that are specific for a class are called `methods`.
+
+A `constructor` is a function that creates objects of a class in a uniform way.
+
+## S3 classes in `recipes`
+
+A recipe itself is of class `recipe`.
+
+All the `steps` and `checks` available all have their own subclass. All with their own `prep` and `bake` functions. 
+
+Recipe gathers all the objects of different subclasses.
+
+When the methods `prep.recipe` and `bake.recipe` are called, they call the methods of the steps and checks.
+
+## Create a custom `step` or `check`
+
+A full step or check comprises:
+
+- the function that is called to add to the recipe
+- constructor to create new objects of the subclass
+- `prep` method
+- `bake` method
+- `print` method
+- `tidy` method
+
+## A recipe for `recipes`
+
+1) Write a function that does the baking action.
+2) Recognize which arguments needs to be provided and which estimated by `prep`.
+3) Write the constructor.
+4) Write the function to be called.
+5) Create the `prep` and `bake` methods.
+6) Create the `print` and `tidy` methods. 
+
+## Resources
+
+Within `recipes` you'll find a number of helper functions.
+
+Grab the source code from github.com/topepo/recipes to access them.
+
+On github.com/EdwinTh/recipe_for_recipes/ you will find a skeleton.
+
+## Example 1: A signed log
+
+In *Practical Data Science with R* (Zumel and Mount) the authors define the signed log as:
+
+if |x| < 1: 0
+else:       sign(x) * log(|x|)
+
+1) the function for this is:
+```{r}
+signed_log <- function(x, base = exp(1)) {
+  ifelse(abs(x) < 1, 0, sign(x) * log(abs(x), base = base))
+}
+```
+
+## Example 1: A signed log 
+
+2) think about the arguments
+
+We have one argument: `base`
+
+Nothing has to be derived by `prep.check_log`
+
+## Example 1: A signed log 
+
+3) The constructor
+
+```{r}
+
+```
+
