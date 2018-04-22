@@ -4,6 +4,12 @@ title: "A recipe for recipes"
 output: ioslides_presentation
 ---
 
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(rlang)
+library(recipes)
+```
+
 ## The `recipes` package
 
 "Preprocessing Tools to Create Design Matrices"
@@ -12,23 +18,19 @@ Define the steps you'll take to go from raw data to the analysis set.
 
 Store these steps into a procedure (a recipe), and apply it on new data.
 
-You focus on the best steps to take, `recipes` does the bookkeeping.
-
-On CRAN since
+You focus on the best processing steps, `recipes` does the bookkeeping.
 
 ## The `recipes` package
 
 A `recipe` is the specification of an intent, separate the planning from the doing.
 
-<picture of a recipe>
+*Insert a picture of a cooking recipe here*
 
 ## Creating a `recipe`
 
 ```{r, warning = FALSE}
 train_set <- mtcars[1:20, c("am", "disp", "hp")]
 test_set  <- mtcars[21:32, c("am", "disp", "hp")]
-library(recipes)
-library(dplyr)
 rec <- recipe(train_set, am ~ .)
 ```
 
@@ -36,7 +38,7 @@ We have defined the roles here, `am` is the outcome, `disp` and `hp` are the pre
 
 ## Adding `steps` to the `recipe`
 
-Once a recipe has created we can add steps to it.
+Once a recipe has created we add steps to it.
 
 ```{r}
 rec_with_steps <- rec %>% 
@@ -51,8 +53,8 @@ This is specifying the intent, we didn't do anything on the data yet.
 Here the work starts. By applying `prep` to the recipe, we are acquiring all the necesarry information on the training set. 
 
 ```{r}
-rec_prepped <- rec_with_steps %>% 
-  prep(train = train_set)
+rec_prepped <- rec_with_steps %>%
+  prep()
 rec_prepped
 ```
 
@@ -66,6 +68,11 @@ test_final  <- bake(rec_prepped, test_set)
 ```
 
 The statistics to center and scale are learned on the `train_set` and applied to the `test_set`.
+
+```{r}
+head(test_final)
+```
+
 
 ## Why am I talking about `recipes`?
 
@@ -97,14 +104,20 @@ eRum_generator <- function(name, country){
   x
 }
 eRum_generator("Edwin", "the Netherlands")
+```
 
+## Aside: S3 objects
+
+```{r}
 print.eRum <- function(x) {
-  paste0(x$name, " from ", x$country, " is at eRum and thinks its awesome.") %>% 
-    print()
+  ret <- paste(x$name, "from", x$country, 
+               "is at eRum and thinks its awesome.")
+  print(ret)
 }
 eRum_generator("Edwin", "the Netherlands")
 eRum_generator("Riccardo", "Italy")
 ```
+
 
 ## Aside: S3 objects
 
@@ -139,10 +152,10 @@ A full step or check comprises:
 
 My preferred way to create a new `step` or `check`:
 
-1) Write a function that does the baking action.
-2) Recognize which arguments needs to be provided and which estimated by `prep`.
+1) Write a function that does the baking action. Don't bother about the `recipes` package yet.
+2) Recognize which arguments need to be provided upfront and which are estimated by `prep`.
 3) Write the constructor.
-4) Write the function that adds the step or check.
+4) Write the `<step_name>_step` or `<check_name>_check` function.
 5) Write the `prep` method.
 6) Write the `bake` method.
 7) Write the `print` method. 
@@ -152,15 +165,16 @@ My preferred way to create a new `step` or `check`:
 
 Within `recipes` you'll find a number of helper functions.
 
-Clone the source code from github.com/topepo/recipes to access them.
+Clone the source code from https://github.com/topepo/recipes to access them.
 
-On github.com/EdwinTh/recipe_for_recipes/ you will find a skeleton for new steps.
+On https://github.com/EdwinTh/recipe_for_recipes you will find a skeleton for new steps.
 
 ## Example 1: A signed log
 
 In *Practical Data Science with R* (Zumel and Mount) the authors define the signed log as:
 
 if |x| < 1: 0
+
 else:       sign(x) * log(|x|)
 
 ## 1) the function for this is:
@@ -289,16 +303,23 @@ tidy.step_signed_log <- function(x, ...) {
 }
 ```
 
+## Put it in practise
+
+```{r, echo = FALSE}
+## load some function from the source code
+source("~/Documents/R_packages/recipes/R/selections.R")
+source("~/Documents/R_packages/recipes/R/recipe.R")
+source("~/Documents/R_packages/recipes/R/misc.R")
+```
+
 ```{r}
 df <- data_frame(x = -2:2)
 recipe(df) %>% step_signed_log(x) %>% prep() %>% bake(df)
 ```
 
-
-
 ## Example 2: A range check
 
-Assure that the range of a numeric variable in a new set is approximately equal to the range of the original.
+Assure that the range of a numeric variable in a new set is approximately equal to the range of the variable in the train set.
 
 Throw informative error when on one or both ends the new variable exceeds the original range plus some slack.
 
@@ -310,16 +331,17 @@ range_check_func <- function(x,
                              upper,
                              slack_prop = 0.05,
                              colname = "x") {
-  min_x <- min(x)
-  max_x <- max(x)
-  slack <- (upper - lower) * slack_prop
+  min_x <- min(x); max_x <- max(x); slack <- (upper - lower) * slack_prop
   if (min_x < (lower - slack) & max_x > (upper + slack)) {
-    stop("min ", colname, " is ", min_x, ", lower bound is ", lower - slack, "\n",
-         "max x is ", max_x, ", upper bound is ", upper + slack)
+    stop("min ", colname, " is ", min_x, ", lower bound is ", lower - slack,
+         "\n", "max x is ", max_x, ", upper bound is ", upper + slack, 
+         call. = FALSE)
   } else if (min_x < (lower - slack)) {
-    stop("min ", colname, " is ", min_x, ", lower bound is ", lower - slack)
+    stop("min ", colname, " is ", min_x, ", lower bound is ", lower - slack, 
+         call. = FALSE)
   } else if (max_x > (upper + slack)) {
-    stop("max ", colname, " is ", max_x, ", upper bound is ", upper + slack)
+    stop("max ", colname, " is ", max_x, ", upper bound is ", upper + slack, 
+         call. = FALSE)
   }
 }
 ```
@@ -328,7 +350,7 @@ range_check_func <- function(x,
 
 `slack_prop` is an argument provided by the user.
 
-`lower` and `upper` should be calculated in the `prep` step.
+`lower` and `upper` should be calculated by the `prep.check_range` method.
 
 ## 3) the constructor
 
@@ -384,10 +406,10 @@ prep.check_range <-
            info = NULL,
            ...) {
     col_names <- terms_select(x$terms, info = info)
-
-    lower_vals <- vapply(training[ ,col_names], min, c(min = 1), na.rm = TRUE)
-    upper_vals <- vapply(training[ ,col_names], max, c(max = 1), na.rm = TRUE)
-
+    lower_vals <- vapply(training[ ,col_names], min, c(min = 1), 
+                         na.rm = TRUE)
+    upper_vals <- vapply(training[ ,col_names], max, c(max = 1), 
+                         na.rm = TRUE)
     check_range_new(
       x$terms,
       role = x$role,
@@ -442,3 +464,32 @@ tidy.check_range <- function(x, ...) {
 }
 ```
 
+## Put it in practise
+
+```{r, error=TRUE}
+df1 <- data_frame(x = -1:1)
+df2 <- data_frame(x = -2:2)
+recipe(df1) %>% check_range(x) %>% prep() %>% bake(df2)
+```
+
+## Resources
+
+Slides and the skeleton can be found here:
+
+https://github.com/EdwinTh/recipe_for_recipes
+
+The source code for recipes is maintained here:
+
+https://github.com/topepo/recipes/
+
+Thorough introduction by Max Kuhn into the package:
+
+https://www.rstudio.com/resources/webinars/creating-and-preprocessing-a-design-matrix-with-recipes/
+
+## Thank you!
+
+edwinthoen@gmail.com
+
+@edwin_thoen
+
+github.com/EdwinTh

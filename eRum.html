@@ -104,52 +104,25 @@
 
 <p>Store these steps into a procedure (a recipe), and apply it on new data.</p>
 
-<p>You focus on the best steps to take, <code>recipes</code> does the bookkeeping.</p>
-
-<p>On CRAN since</p>
+<p>You focus on the best processing steps, <code>recipes</code> does the bookkeeping.</p>
 
 </article></slide><slide class=""><hgroup><h2>The <code>recipes</code> package</h2></hgroup><article  id="the-recipes-package-1">
 
 <p>A <code>recipe</code> is the specification of an intent, separate the planning from the doing.</p>
 
-<p><picture of a recipe></p>
+<p><em>Insert a picture of a cooking recipe here</em></p>
 
 </article></slide><slide class=""><hgroup><h2>Creating a <code>recipe</code></h2></hgroup><article  id="creating-a-recipe">
 
 <pre class = 'prettyprint lang-r'>train_set &lt;- mtcars[1:20, c(&quot;am&quot;, &quot;disp&quot;, &quot;hp&quot;)]
 test_set  &lt;- mtcars[21:32, c(&quot;am&quot;, &quot;disp&quot;, &quot;hp&quot;)]
-library(recipes)</pre>
-
-<pre >## Loading required package: dplyr</pre>
-
-<pre >## 
-## Attaching package: &#39;dplyr&#39;</pre>
-
-<pre >## The following objects are masked from &#39;package:stats&#39;:
-## 
-##     filter, lag</pre>
-
-<pre >## The following objects are masked from &#39;package:base&#39;:
-## 
-##     intersect, setdiff, setequal, union</pre>
-
-<pre >## Loading required package: broom</pre>
-
-<pre >## 
-## Attaching package: &#39;recipes&#39;</pre>
-
-<pre >## The following object is masked from &#39;package:stats&#39;:
-## 
-##     step</pre>
-
-<pre class = 'prettyprint lang-r'>library(dplyr)
 rec &lt;- recipe(train_set, am ~ .)</pre>
 
 <p>We have defined the roles here, <code>am</code> is the outcome, <code>disp</code> and <code>hp</code> are the predictors.</p>
 
 </article></slide><slide class=""><hgroup><h2>Adding <code>steps</code> to the <code>recipe</code></h2></hgroup><article  id="adding-steps-to-the-recipe">
 
-<p>Once a recipe has created we can add steps to it.</p>
+<p>Once a recipe has created we add steps to it.</p>
 
 <pre class = 'prettyprint lang-r'>rec_with_steps &lt;- rec %&gt;% 
   step_center(all_predictors()) %&gt;% 
@@ -161,8 +134,8 @@ rec &lt;- recipe(train_set, am ~ .)</pre>
 
 <p>Here the work starts. By applying <code>prep</code> to the recipe, we are acquiring all the necesarry information on the training set.</p>
 
-<pre class = 'prettyprint lang-r'>rec_prepped &lt;- rec_with_steps %&gt;% 
-  prep(train = train_set)
+<pre class = 'prettyprint lang-r'>rec_prepped &lt;- rec_with_steps %&gt;%
+  prep()
 rec_prepped</pre>
 
 <pre >## Data Recipe
@@ -188,6 +161,18 @@ rec_prepped</pre>
 test_final  &lt;- bake(rec_prepped, test_set)</pre>
 
 <p>The statistics to center and scale are learned on the <code>train_set</code> and applied to the <code>test_set</code>.</p>
+
+<pre class = 'prettyprint lang-r'>head(test_final)</pre>
+
+<pre >## # A tibble: 6 x 3
+##      am   disp     hp
+##   &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;
+## 1    0. -0.883 -0.653
+## 2    0.  0.652  0.230
+## 3    0.  0.544  0.230
+## 4    0.  0.901  1.81 
+## 5    0.  1.29   0.647
+## 6    1. -1.20  -1.17</pre>
 
 </article></slide><slide class=""><hgroup><h2>Why am I talking about <code>recipes</code>?</h2></hgroup><article  id="why-am-i-talking-about-recipes">
 
@@ -228,9 +213,12 @@ eRum_generator(&quot;Edwin&quot;, &quot;the Netherlands&quot;)</pre>
 ## attr(,&quot;class&quot;)
 ## [1] &quot;eRum&quot;</pre>
 
+</article></slide><slide class=""><hgroup><h2>Aside: S3 objects</h2></hgroup><article  id="aside-s3-objects-1">
+
 <pre class = 'prettyprint lang-r'>print.eRum &lt;- function(x) {
-  paste0(x$name, &quot; from &quot;, x$country, &quot; is at eRum and thinks its awesome.&quot;) %&gt;% 
-    print()
+  ret &lt;- paste(x$name, &quot;from&quot;, x$country, 
+               &quot;is at eRum and thinks its awesome.&quot;)
+  print(ret)
 }
 eRum_generator(&quot;Edwin&quot;, &quot;the Netherlands&quot;)</pre>
 
@@ -240,7 +228,7 @@ eRum_generator(&quot;Edwin&quot;, &quot;the Netherlands&quot;)</pre>
 
 <pre >## [1] &quot;Riccardo from Italy is at eRum and thinks its awesome.&quot;</pre>
 
-</article></slide><slide class=""><hgroup><h2>Aside: S3 objects</h2></hgroup><article  id="aside-s3-objects-1">
+</article></slide><slide class=""><hgroup><h2>Aside: S3 objects</h2></hgroup><article  id="aside-s3-objects-2">
 
 <p>An S3 object is built by adding a <code>class</code> to a base object.</p>
 
@@ -273,47 +261,55 @@ eRum_generator(&quot;Edwin&quot;, &quot;the Netherlands&quot;)</pre>
 
 </article></slide><slide class=""><hgroup><h2>A recipe for <code>recipes</code></h2></hgroup><article  id="a-recipe-for-recipes">
 
+<p>My preferred way to create a new <code>step</code> or <code>check</code>:</p>
+
 <ol>
-<li>Write a function that does the baking action.</li>
-<li>Recognize which arguments needs to be provided and which estimated by <code>prep</code>.</li>
+<li>Write a function that does the baking action. Don&#39;t bother about the <code>recipes</code> package yet.</li>
+<li>Recognize which arguments need to be provided upfront and which are estimated by <code>prep</code>.</li>
 <li>Write the constructor.</li>
-<li>Write the function to be called.</li>
-<li>Create the <code>prep</code></li>
-<li><code>bake</code> methods.</li>
-<li>Create the <code>print</code> and <code>tidy</code> methods.</li>
+<li>Write the <code>&lt;step_name&gt;_step</code> or <code>&lt;check_name&gt;_check</code> function.</li>
+<li>Write the <code>prep</code> method.</li>
+<li>Write the <code>bake</code> method.</li>
+<li>Write the <code>print</code> method.</li>
+<li>Write the <code>tidy</code> method.</li>
 </ol>
 
 </article></slide><slide class=""><hgroup><h2>Resources</h2></hgroup><article  id="resources">
 
 <p>Within <code>recipes</code> you&#39;ll find a number of helper functions.</p>
 
-<p>Grab the source code from github.com/topepo/recipes to access them.</p>
+<p>Clone the source code from <a href='https://github.com/topepo/recipes' title=''>https://github.com/topepo/recipes</a> to access them.</p>
 
-<p>On github.com/EdwinTh/recipe_for_recipes/ you will find a skeleton.</p>
+<p>On <a href='https://github.com/EdwinTh/recipe_for_recipes' title=''>https://github.com/EdwinTh/recipe_for_recipes</a> you will find a skeleton for new steps.</p>
 
 </article></slide><slide class=""><hgroup><h2>Example 1: A signed log</h2></hgroup><article  id="example-1-a-signed-log">
 
 <p>In <em>Practical Data Science with R</em> (Zumel and Mount) the authors define the signed log as:</p>
 
-<p>if |x| &lt; 1: 0 else: sign(x) * log(|x|)</p>
+<p>if |x| &lt; 1: 0</p>
+
+<p>else: sign(x) * log(|x|)</p>
 
 </article></slide><slide class=""><hgroup><h2>1) the function for this is:</h2></hgroup><article  id="the-function-for-this-is">
 
 <pre class = 'prettyprint lang-r'>signed_log &lt;- function(x, base = exp(1)) {
-  ifelse(abs(x) &lt; 1, 0, sign(x) * log(abs(x), base = base))
+  ifelse(abs(x) &lt; 1, 
+         0, 
+         sign(x) * log(abs(x), base = base))
 }</pre>
 
 </article></slide><slide class=""><hgroup><h2>2) think about the arguments</h2></hgroup><article  id="think-about-the-arguments">
 
 <p>We have one argument: <code>base</code></p>
 
-<p>Nothing has to be derived by <code>prep.check_log</code></p>
+<p>Nothing has to be derived by <code>prep.signed_log</code></p>
 
 </article></slide><slide class=""><hgroup><h2>3) The constructor</h2></hgroup><article  id="the-constructor">
 
 <pre class = 'prettyprint lang-r'>step_signed_log_new &lt;-
   function(terms   = NULL,
            role    = NA,
+           skip    = FALSE,
            trained = FALSE,
            base    = NULL,
            columns = NULL) {
@@ -321,6 +317,7 @@ eRum_generator(&quot;Edwin&quot;, &quot;the Netherlands&quot;)</pre>
       subclass = &quot;signed_log&quot;,
       terms    = terms,
       role     = role,
+      skip     = skip,
       trained  = trained,
       base     = base,
       columns  = columns
@@ -333,6 +330,7 @@ eRum_generator(&quot;Edwin&quot;, &quot;the Netherlands&quot;)</pre>
   function(recipe,
            ...,
            role    = NA,
+           skip    = FALSE,
            trained = FALSE,
            base    = exp(1),
            columns = NULL) {
@@ -340,8 +338,9 @@ eRum_generator(&quot;Edwin&quot;, &quot;the Netherlands&quot;)</pre>
       recipe,
       step_signed_log_new(
         terms   = ellipse_check(...),
-        trained = trained,
         role    = role,
+        skip    = skip,
+        trained = trained,
         base    = base,
         columns = columns
       )
@@ -358,6 +357,7 @@ eRum_generator(&quot;Edwin&quot;, &quot;the Netherlands&quot;)</pre>
   step_signed_log_new(
     terms   = x$terms,
     role    = x$role,
+    skip    = x$skip,
     trained = TRUE,
     base    = x$base,
     columns = col_names
@@ -391,30 +391,194 @@ eRum_generator(&quot;Edwin&quot;, &quot;the Netherlands&quot;)</pre>
     invisible(x)
 }</pre>
 
+</article></slide><slide class=""><hgroup><h2>8) the <code>tidy</code> method</h2></hgroup><article  id="the-tidy-method">
+
+<pre class = 'prettyprint lang-r'>tidy.step_signed_log &lt;- function(x, ...) {
+  if (is_trained(x)) {
+    res &lt;- tibble(terms = x$columns)
+  } else {
+    res &lt;- tibble(terms = sel2char(x$terms))
+  }
+  res
+}</pre>
+
+</article></slide><slide class=""><hgroup><h2>Put it in practise</h2></hgroup><article  id="put-it-in-practise">
+
+<pre class = 'prettyprint lang-r'>df &lt;- data_frame(x = -2:2)
+recipe(df) %&gt;% step_signed_log(x) %&gt;% prep() %&gt;% bake(df)</pre>
+
+<pre >## # A tibble: 5 x 1
+##        x
+##    &lt;dbl&gt;
+## 1 -0.693
+## 2  0.   
+## 3  0.   
+## 4  0.   
+## 5  0.693</pre>
+
 </article></slide><slide class=""><hgroup><h2>Example 2: A range check</h2></hgroup><article  id="example-2-a-range-check">
 
-<p>Assure that the range of a numeric variable in a new set is approximately equal to the range of the original.</p>
+<p>Assure that the range of a numeric variable in a new set is approximately equal to the range of the variable in the train set.</p>
 
 <p>Throw informative error when on one or both ends the new variable exceeds the original range plus some slack.</p>
 
 </article></slide><slide class=""><hgroup><h2>1) the function for this is:</h2></hgroup><article  id="the-function-for-this-is-1">
 
 <pre class = 'prettyprint lang-r'>range_check_func &lt;- function(x,
-                       lower,
-                       upper,
-                       slack_prop = 0.05) {
-  min_x &lt;- min(x)
-  max_x &lt;- max(x)
-  slack &lt;- (upper - lower) * slack_prop
+                             lower,
+                             upper,
+                             slack_prop = 0.05,
+                             colname = &quot;x&quot;) {
+  min_x &lt;- min(x); max_x &lt;- max(x); slack &lt;- (upper - lower) * slack_prop
   if (min_x &lt; (lower - slack) &amp; max_x &gt; (upper + slack)) {
-    stop(&quot;min x is &quot;, min_x, &quot;, lower bound is &quot;, lower - slack, &quot;\n&quot;,
-         &quot;max x is &quot;, max_x, &quot;, upper bound is &quot;, upper + slack)
+    stop(&quot;min &quot;, colname, &quot; is &quot;, min_x, &quot;, lower bound is &quot;, lower - slack,
+         &quot;\n&quot;, &quot;max x is &quot;, max_x, &quot;, upper bound is &quot;, upper + slack, 
+         call. = FALSE)
   } else if (min_x &lt; (lower - slack)) {
-    stop(&quot;min x is &quot;, min_x, &quot;, lower bound is &quot;, lower - slack)
+    stop(&quot;min &quot;, colname, &quot; is &quot;, min_x, &quot;, lower bound is &quot;, lower - slack, 
+         call. = FALSE)
   } else if (max_x &gt; (upper + slack)) {
-    stop(&quot;max x is &quot;, max_x, &quot;, upper bound is &quot;, upper + slack)
+    stop(&quot;max &quot;, colname, &quot; is &quot;, max_x, &quot;, upper bound is &quot;, upper + slack, 
+         call. = FALSE)
   }
-}</pre></article></slide>
+}</pre>
+
+</article></slide><slide class=""><hgroup><h2>2) thinking about the arguments</h2></hgroup><article  id="thinking-about-the-arguments">
+
+<p><code>slack_prop</code> is an argument provided by the user.</p>
+
+<p><code>lower</code> and <code>upper</code> should be calculated by the <code>prep.check_range</code> method.</p>
+
+</article></slide><slide class=""><hgroup><h2>3) the constructor</h2></hgroup><article  id="the-constructor-1">
+
+<pre class = 'prettyprint lang-r'>check_range_new &lt;-
+  function(terms = NULL,
+           role  = NA,
+           trained = FALSE,
+           lower   = NULL,
+           upper   = NULL,
+           slack_prop = NULL) {
+    check(subclass = &quot;range&quot;,
+          terms    = terms,
+          role     = role,
+          trained  = trained,
+          lower    = lower,
+          upper    = upper,
+          slack_prop = slack_prop)
+  }</pre>
+
+</article></slide><slide class=""><hgroup><h2>4) the function itself</h2></hgroup><article  id="the-function-itself">
+
+<pre class = 'prettyprint lang-r'>check_range &lt;-
+  function(recipe,
+           ...,
+           role = NA,
+           trained = FALSE,
+           lower   = NULL,
+           upper   = NULL,
+           slack_prop = 0.05) {
+    add_check(
+      recipe,
+      check_range_new(
+        terms   = ellipse_check(...),
+        role    = role,
+        trained = trained,
+        lower   = lower,
+        upper   = upper,
+        slack_prop = slack_prop
+      )
+    )
+  }</pre>
+
+</article></slide><slide class=""><hgroup><h2>5) the <code>prep</code> method</h2></hgroup><article  id="the-prep-method-1">
+
+<pre class = 'prettyprint lang-r'>prep.check_range &lt;-
+  function(x,
+           training,
+           info = NULL,
+           ...) {
+    col_names &lt;- terms_select(x$terms, info = info)
+    lower_vals &lt;- vapply(training[ ,col_names], min, c(min = 1), 
+                         na.rm = TRUE)
+    upper_vals &lt;- vapply(training[ ,col_names], max, c(max = 1), 
+                         na.rm = TRUE)
+    check_range_new(
+      x$terms,
+      role = x$role,
+      trained = TRUE,
+      lower   = lower_vals,
+      upper   = upper_vals,
+      slack_prop = x$slack_prop
+    )
+  }</pre>
+
+</article></slide><slide class=""><hgroup><h2>6) the <code>bake</code> method</h2></hgroup><article  id="the-bake-method-1">
+
+<pre class = 'prettyprint lang-r'>bake.check_range &lt;- function(object,
+                             newdata,
+                             ...) {
+  col_names &lt;- names(object$lower)
+  for (i in seq_along(col_names)) {
+    colname &lt;- col_names[i]
+    range_check_func(newdata[[ colname ]],
+                     object$lower[colname],
+                     object$upper[colname],
+                     object$slack_prop,
+                     colname)
+  }
+  as_tibble(newdata)
+}</pre>
+
+</article></slide><slide class=""><hgroup><h2>7) the <code>print</code> method</h2></hgroup><article  id="the-print-method-1">
+
+<pre class = 'prettyprint lang-r'>print.check_range &lt;-
+  function(x, width = max(20, options()$width - 30), ...) {
+    cat(&quot;Checking range of &quot;, sep = &quot;&quot;)
+    printer(names(x$lower), x$terms, x$trained, width = width)
+    invisible(x)
+  }</pre>
+
+</article></slide><slide class=""><hgroup><h2>8) the <code>tidy</code> method</h2></hgroup><article  id="the-tidy-method-1">
+
+<pre class = 'prettyprint lang-r'>tidy.check_range &lt;- function(x, ...) {
+  if (is_trained(x)) {
+    res &lt;- tibble(terms = x$columns)
+  } else {
+    res &lt;- tibble(terms = sel2char(x$terms))
+  }
+  res
+}</pre>
+
+</article></slide><slide class=""><hgroup><h2>Put it in practise</h2></hgroup><article  id="put-it-in-practise-1">
+
+<pre class = 'prettyprint lang-r'>df1 &lt;- data_frame(x = -1:1)
+df2 &lt;- data_frame(x = -2:2)
+recipe(df1) %&gt;% check_range(x) %&gt;% prep() %&gt;% bake(df2)</pre>
+
+<pre >## Error: min x is -2, lower bound is -1.1
+## max x is 2, upper bound is 1.1</pre>
+
+</article></slide><slide class=""><hgroup><h2>Resources</h2></hgroup><article  id="resources-1">
+
+<p>Slides and the skeleton can be found here:</p>
+
+<p><a href='https://github.com/EdwinTh/recipe_for_recipes' title=''>https://github.com/EdwinTh/recipe_for_recipes</a></p>
+
+<p>The source code for recipes is maintained here:</p>
+
+<p><a href='https://github.com/topepo/recipes/' title=''>https://github.com/topepo/recipes/</a></p>
+
+<p>Thorough introduction by Max Kuhn into the package:</p>
+
+<p><a href='https://www.rstudio.com/resources/webinars/creating-and-preprocessing-a-design-matrix-with-recipes/' title=''>https://www.rstudio.com/resources/webinars/creating-and-preprocessing-a-design-matrix-with-recipes/</a></p>
+
+</article></slide><slide class=""><hgroup><h2>Thank you!</h2></hgroup><article  id="thank-you">
+
+<p><a href='mailto:edwinthoen@gmail.com' title=''>edwinthoen@gmail.com</a></p>
+
+<p><span class="cite">@edwin_thoen</span></p>
+
+<p>github.com/EdwinTh</p></article></slide>
 
 
   <slide class="backdrop"></slide>
