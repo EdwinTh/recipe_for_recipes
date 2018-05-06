@@ -1,6 +1,8 @@
 ---
 author: Edwin Thoen
 title: "A recipe for recipes"
+subtitle: "eRum 2018 @ Budapest"
+date: May 15, 2018
 output: ioslides_presentation
 ---
 
@@ -12,6 +14,8 @@ library(recipes)
 
 ## The `recipes` package
 
+Kuhn & Wickham 2017
+
 "Preprocessing Tools to Create Design Matrices"
 
 Define the steps you'll take to go from raw data to the analysis set.
@@ -20,11 +24,21 @@ Store these steps into a procedure (a recipe), and apply it on new data.
 
 You focus on the best processing steps, `recipes` does the bookkeeping.
 
+## What to expect?
+
+1) A short introduction of `recipes`
+
+2) The recipe for `recipes`
+
+3) Example(s) in which the recipe for `recipes` is applied
+
 ## The `recipes` package
 
 A `recipe` is the specification of an intent, separate the planning from the doing.
 
-*Insert a picture of a cooking recipe here*
+```{r, echo = FALSE, out.height="450px", out.width="700px", fig.align='center'}
+knitr::include_graphics("recipe.jpg")
+```
 
 ## Creating a `recipe`
 
@@ -38,8 +52,6 @@ We have defined the roles here, `am` is the outcome, `disp` and `hp` are the pre
 
 ## Adding `steps` to the `recipe`
 
-Once a recipe has created we add steps to it.
-
 ```{r}
 rec_with_steps <- rec %>% 
   step_center(all_predictors()) %>% 
@@ -50,12 +62,10 @@ This is specifying the intent, we didn't do anything on the data yet.
 
 ## Preparing the recipe with `prep`
 
-Here the work starts. By applying `prep` to the recipe, we are acquiring all the necesarry information on the training set. 
+`prep` acquires all the necesarry information on the training set. 
 
 ```{r}
-rec_prepped <- rec_with_steps %>%
-  prep()
-rec_prepped
+(rec_prepped <- rec_with_steps %>% prep())
 ```
 
 We now have the statistics to apply the centering and scaling derived from the training set and stored in the recipe.
@@ -73,6 +83,13 @@ The statistics to center and scale are learned on the `train_set` and applied to
 head(test_final)
 ```
 
+## Get information with `tidy`
+
+Gives information about the steps in a data frame.
+
+```{r}
+tidy(rec_prepped)
+```
 
 ## Why am I talking about `recipes`?
 
@@ -81,10 +98,10 @@ Added the `check` framework together with Max.
 A `check` does not change the data in any way, it tests assumptions and will break `bake` if these are not met.
 
 ```{r, error=TRUE}
-rec <- recipe(train_set) %>% check_missing(everything()) %>% prep()
+rec2 <- recipe(train_set) %>% check_missing(everything()) %>% prep()
 test_set[1, 1] <- NA
-train_baked <- bake(rec, train_set)
-test_baked  <- bake(rec, test_set)
+train_baked <- bake(rec2, train_set)
+test_baked  <- bake(rec2, test_set)
 ```
 
 ## Building youw own steps and checks
@@ -95,47 +112,16 @@ For your own preparations and to contribute to the package.
 
 Challenge, delve a little deeper into the package inner workings.
 
-## Aside: S3 objects
-
-```{r}
-eRum_generator <- function(name, country){
-  x <- list(name = name, country = country)
-  class(x) <- "eRum"
-  x
-}
-eRum_generator("Edwin", "the Netherlands")
-```
-
-## Aside: S3 objects
-
-```{r}
-print.eRum <- function(x) {
-  ret <- paste(x$name, "from", x$country, 
-               "is at eRum and thinks its awesome.")
-  print(ret)
-}
-eRum_generator("Edwin", "the Netherlands")
-eRum_generator("Riccardo", "Italy")
-```
-
-
-## Aside: S3 objects
-
-An S3 object is built by adding a `class` to a base object.
-
-Functions that are specific for a class are called `methods`.
-
-A `constructor` is a function that creates objects of a class in a uniform way.
-
 ## S3 classes in `recipes`
 
 A recipe itself is of class `recipe`.
 
-All the `steps` and `checks` available all have their own subclass. All with their own `prep` and `bake` functions. 
+All the `steps` and `checks` available have their own subclass. Each with their own `prep` and `bake` functions. 
 
-Recipe gathers all the objects of different subclasses.
+The recipe gathers all the objects of different subclasses.
 
-When the methods `prep.recipe` and `bake.recipe` are called, they call the methods of the steps and checks.
+`prep.recipe` and `bake.recipe` call the `prep` and `bake` methods of its steps and checks.
+
 
 ## Create a custom `step` or `check`
 
@@ -169,161 +155,21 @@ Clone the source code from https://github.com/topepo/recipes to access them.
 
 On https://github.com/EdwinTh/recipe_for_recipes you will find a skeleton for new steps.
 
-## Example 1: A signed log
-
-In *Practical Data Science with R* (Zumel and Mount) the authors define the signed log as:
-
-if |x| < 1: 0
-
-else:       sign(x) * log(|x|)
-
-## 1) the function for this is:
-```{r}
-signed_log <- function(x, base = exp(1)) {
-  ifelse(abs(x) < 1, 
-         0, 
-         sign(x) * log(abs(x), base = base))
-}
-```
-
-## 2) think about the arguments
-
-We have one argument: `base`
-
-Nothing has to be derived by `prep.signed_log`
-
-## 3) The constructor
-
-```{r}
-step_signed_log_new <-
-  function(terms   = NULL,
-           role    = NA,
-           skip    = FALSE,
-           trained = FALSE,
-           base    = NULL,
-           columns = NULL) {
-    step(
-      subclass = "signed_log",
-      terms    = terms,
-      role     = role,
-      skip     = skip,
-      trained  = trained,
-      base     = base,
-      columns  = columns
-    )
-  }
-```
-
-## 4) The function to add it to the recipe
-
-```{r}
-step_signed_log <-
-  function(recipe,
-           ...,
-           role    = NA,
-           skip    = FALSE,
-           trained = FALSE,
-           base    = exp(1),
-           columns = NULL) {
-    add_step(
-      recipe,
-      step_signed_log_new(
-        terms   = ellipse_check(...),
-        role    = role,
-        skip    = skip,
-        trained = trained,
-        base    = base,
-        columns = columns
-      )
-    )
-  }
-```
-
-## 5) the `prep` method
-
-```{r}
-prep.step_signed_log <- function(x,
-                                 training,
-                                 info = NULL, 
-                                  ...) {
-  col_names <- terms_select(x$terms, info = info)
-  step_signed_log_new(
-    terms   = x$terms,
-    role    = x$role,
-    skip    = x$skip,
-    trained = TRUE,
-    base    = x$base,
-    columns = col_names
-  )
-}
-```
-
-## 6) the `bake` method
-
-```{r}
-
-bake.step_signed_log <- function(object,
-                                 newdata,
-                                 ...) {
-  col_names <- object$columns
-  for (i in seq_along(col_names)) {
-    col <- newdata[[ col_names[i] ]]
-    newdata[, col_names[i]] <-
-      ifelse(abs(col) < 1, 
-             0, 
-             sign(col) * log(abs(col), base = object$base))
-  }
-  as_tibble(newdata)
-}
-```
-
-## 7) the `print` method 
-
-```{r}
-print.step_signed_log <-
-  function(x, width = max(20, options()$width - 30), ...) {
-
-    cat("Taking the signed log for ", sep = "")
-    printer(x$columns, x$terms, x$trained, width = width)
-
-    invisible(x)
-}
-```
-
-## 8) the `tidy` method
-
-```{r}
-tidy.step_signed_log <- function(x, ...) {
-  if (is_trained(x)) {
-    res <- tibble(terms = x$columns)
-  } else {
-    res <- tibble(terms = sel2char(x$terms))
-  }
-  res
-}
-```
-
-## Put it in practise
-
-```{r, echo = FALSE}
-## load some function from the source code
-source("~/Documents/R_packages/recipes/R/selections.R")
-source("~/Documents/R_packages/recipes/R/recipe.R")
-source("~/Documents/R_packages/recipes/R/misc.R")
-```
-
-```{r}
-df <- data_frame(x = -2:2)
-recipe(df) %>% step_signed_log(x) %>% prep() %>% bake(df)
-```
-
-## Example 2: A range check
+## Example: A range check
 
 Assure that the range of a numeric variable in a new set is approximately equal to the range of the variable in the train set.
 
 Throw informative error when on one or both ends the new variable exceeds the original range plus some slack.
 
 ## 1) the function for this is:
+
+```{r, echo=FALSE}
+## load some function from the source code
+source("~/Documents/R_packages/recipes/R/selections.R")
+source("~/Documents/R_packages/recipes/R/recipe.R")
+source("~/Documents/R_packages/recipes/R/misc.R")
+```
+
 
 ```{r}
 range_check_func <- function(x,
@@ -372,7 +218,7 @@ check_range_new <-
   }
 ```
 
-## 4) the function itself
+## 4) the function to add it to the recipe
 
 ```{r}
 check_range <-
@@ -482,7 +328,7 @@ The source code for recipes is maintained here:
 
 https://github.com/topepo/recipes/
 
-Thorough introduction by Max Kuhn into the package:
+Thorough introduction by Max Kuhn to the package:
 
 https://www.rstudio.com/resources/webinars/creating-and-preprocessing-a-design-matrix-with-recipes/
 
