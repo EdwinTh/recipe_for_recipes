@@ -18,11 +18,7 @@ Kuhn & Wickham 2017
 
 "Preprocessing Tools to Create Design Matrices"
 
-Define the steps you'll take to go from raw data to the analysis set.
-
-Store these steps into a procedure (a recipe), and apply it on new data.
-
-You focus on the best processing steps, `recipes` does the bookkeeping.
+A recipe is a container for preprocessing steps to go from raw data to an analysis set.
 
 ## What to expect?
 
@@ -30,7 +26,7 @@ You focus on the best processing steps, `recipes` does the bookkeeping.
 
 2) The recipe for `recipes`
 
-3) Example(s) in which the recipe for `recipes` is applied
+3) Example in which the recipe for `recipes` is applied
 
 ## The `recipes` package
 
@@ -141,7 +137,7 @@ My preferred way to create a new `step` or `check`:
 1) Write a function that does the baking action. Don't bother about the `recipes` package yet.
 2) Recognize which arguments need to be provided upfront and which are estimated by `prep`.
 3) Write the constructor.
-4) Write the `<step_name>_step` or `<check_name>_check` function.
+4) Write the `step_<step_name>` or `check_<check_name>` function.
 5) Write the `prep` method.
 6) Write the `bake` method.
 7) Write the `print` method. 
