@@ -1,7 +1,7 @@
 ---
 author: Edwin Thoen
 title: "A recipe for recipes"
-subtitle: "eRum 2018 @ Budapest"
+subtitle: "eRum2018 @ Budapest"
 date: May 15, 2018
 output: ioslides_presentation
 ---
