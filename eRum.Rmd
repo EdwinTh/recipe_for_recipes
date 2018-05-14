@@ -143,19 +143,13 @@ My preferred way to create a new `step` or `check`:
 7) Write the `print` method. 
 8) Write the `tidy` method. 
 
-## Resources
+## Example: A signed log
 
-Within `recipes` you'll find a number of helper functions.
+In *Practical Data Science with R* (Zumel and Mount) the authors define the signed log as:
 
-Clone the source code from https://github.com/topepo/recipes to access them.
+if |x| < 1: 0
 
-On https://github.com/EdwinTh/recipe_for_recipes you will find a skeleton for new steps.
-
-## Example: A range check
-
-Assure that the range of a numeric variable in a new set is approximately equal to the range of the variable in the train set.
-
-Throw informative error when on one or both ends the new variable exceeds the original range plus some slack.
+else:       sign(x) * log(|x|)
 
 ## 1) the function for this is:
 
@@ -166,6 +160,175 @@ source("~/Documents/R_packages/recipes/R/recipe.R")
 source("~/Documents/R_packages/recipes/R/misc.R")
 ```
 
+```{r}
+signed_log <- function(x, base = exp(1)) {
+  ifelse(abs(x) < 1, 
+         0, 
+         sign(x) * log(abs(x), base = base))
+}
+```
+
+## 2) think about the arguments
+
+We have one argument: `base`
+
+Nothing has to be derived by `prep.signed_log`
+
+## 3) The constructor
+
+```{r}
+step_signed_log_new <-
+  function(terms   = NULL,
+           role    = NA,
+           skip    = FALSE,
+           trained = FALSE,
+           base    = NULL,
+           columns = NULL) {
+    step(
+      subclass = "signed_log",
+      terms    = terms,
+      role     = role,
+      skip     = skip,
+      trained  = trained,
+      base     = base,
+      columns  = columns
+    )
+  }
+```
+
+## 4) the function to add it to the recipe
+
+```{r}
+step_signed_log <-
+  function(recipe,
+           ...,
+           role    = NA,
+           skip    = FALSE,
+           trained = FALSE,
+           base    = exp(1),
+           columns = NULL) {
+    add_step(
+      recipe,
+      step_signed_log_new(
+        terms   = ellipse_check(...),
+        role    = role,
+        skip    = skip,
+        trained = trained,
+        base    = base,
+        columns = columns
+      )
+    )
+  }
+```
+
+## 5) the `prep` method
+
+```{r}
+prep.step_signed_log <- function(x,
+                                 training,
+                                 info = NULL, 
+                                  ...) {
+  col_names <- terms_select(x$terms, info = info)
+  step_signed_log_new(
+    terms   = x$terms,
+    role    = x$role,
+    skip    = x$skip,
+    trained = TRUE,
+    base    = x$base,
+    columns = col_names
+  )
+}
+```
+
+## 6) the `bake` method
+
+```{r}
+
+bake.step_signed_log <- function(object,
+                                 newdata,
+                                 ...) {
+  col_names <- object$columns
+  for (i in seq_along(col_names)) {
+    col <- newdata[[ col_names[i] ]]
+    newdata[, col_names[i]] <-
+      ifelse(abs(col) < 1, 
+             0, 
+             sign(col) * log(abs(col), base = object$base))
+  }
+  as_tibble(newdata)
+}
+```
+
+## 7) the `print` method 
+
+```{r}
+print.step_signed_log <-
+  function(x, width = max(20, options()$width - 30), ...) {
+
+    cat("Taking the signed log for ", sep = "")
+    printer(x$columns, x$terms, x$trained, width = width)
+
+    invisible(x)
+}
+```
+
+## 8) the `tidy` method
+
+```{r}
+tidy.step_signed_log <- function(x, ...) {
+  if (is_trained(x)) {
+    res <- tibble(terms = x$columns)
+  } else {
+    res <- tibble(terms = sel2char(x$terms))
+  }
+  res
+}
+```
+
+## Put it in practise
+
+```{r}
+df <- data_frame(x = -2:2)
+recipe(df) %>% step_signed_log(x) %>% prep() %>% bake(df)
+```
+
+## Resources
+
+Within `recipes` you'll find a number of helper functions.
+
+Clone the source code from https://github.com/topepo/recipes to access them.
+
+On https://github.com/EdwinTh/recipe_for_recipes you will find a skeleton for new steps.
+
+## Resources
+
+Slides and the skeleton can be found here:
+
+https://github.com/EdwinTh/recipe_for_recipes
+
+The source code for recipes is maintained here:
+
+https://github.com/topepo/recipes/
+
+Thorough introduction by Max Kuhn to the package:
+
+https://www.rstudio.com/resources/webinars/creating-and-preprocessing-a-design-matrix-with-recipes/
+
+## Thank you!
+
+edwinthoen@gmail.com
+
+@edwin_thoen
+
+github.com/EdwinTh
+
+## Example: A range check
+
+Assure that the range of a numeric variable in a new set is approximately equal to the range of the variable in the train set.
+
+Throw informative error when on one or both ends the new variable exceeds the original range plus some slack.
+
+## 1) the function for this is:
 
 ```{r}
 range_check_func <- function(x,
@@ -305,7 +468,6 @@ tidy.check_range <- function(x, ...) {
   res
 }
 ```
-
 ## Put it in practise
 
 ```{r, error=TRUE}
@@ -313,25 +475,3 @@ df1 <- data_frame(x = -1:1)
 df2 <- data_frame(x = -2:2)
 recipe(df1) %>% check_range(x) %>% prep() %>% bake(df2)
 ```
-
-## Resources
-
-Slides and the skeleton can be found here:
-
-https://github.com/EdwinTh/recipe_for_recipes
-
-The source code for recipes is maintained here:
-
-https://github.com/topepo/recipes/
-
-Thorough introduction by Max Kuhn to the package:
-
-https://www.rstudio.com/resources/webinars/creating-and-preprocessing-a-design-matrix-with-recipes/
-
-## Thank you!
-
-edwinthoen@gmail.com
-
-@edwin_thoen
-
-github.com/EdwinTh
