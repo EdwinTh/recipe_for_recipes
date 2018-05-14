@@ -1,3 +1,7 @@
 # recipe_for_recipes
 
-Provide a guideline for contribution of custom `steps_` and `checks_` to the `recipes` R package by Max Kuhn and Hadley Wickham. Presentation to be held at eRum Budapest, Tuesday May 15, 9.50 to 10.10
+eRum Budapest, Tuesday May 15, 9.50 to 10.10
+
+The recipes package (Kuhn and Wickham, 2018) is a set of “Preprocessing Tools to Create Design Matrices”. It delivers a framework in which preprocessing steps on one or more variables are captured in individual objects, called steps and checks. The former do transformations on variables, the latter assert that expectations about the variables are met. A recipe object is created on a train set, to which the steps and checks are added one by one. Once the recipe is done, the prep method is used to estimate all the relevant statistics from the variables. Finally, the actual transformations are applied to data sets using the bake function on the recipe. New data, such as test sets or future observations to score, also run through the recipe via bake. This ensures that the exact same preparation is used on all data sets.
+
+To leverage recipes fully, one should add their own steps and checks to the ones that are shipped with the package. However, whereas the use of the package is intuitive and quick to pick up, writing custom steps and checks requires some understanding of the package inner workings. In this talk I will give a quick introduction to the package and I will elaborate on how to create your own steps and checks. Providing a framework, or if you like a recipe, for them. After attending this talk you should be able to create your own steps and checks.

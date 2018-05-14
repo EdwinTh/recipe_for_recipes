@@ -294,14 +294,6 @@ recipe(df) %>% step_signed_log(x) %>% prep() %>% bake(df)
 
 ## Resources
 
-Within `recipes` you'll find a number of helper functions.
-
-Clone the source code from https://github.com/topepo/recipes to access them.
-
-On https://github.com/EdwinTh/recipe_for_recipes you will find a skeleton for new steps.
-
-## Resources
-
 Slides and the skeleton can be found here:
 
 https://github.com/EdwinTh/recipe_for_recipes
